@@ -98,7 +98,7 @@ ARGF.each do |line|
     data[url] = Note.new(url) unless data.has_key?(url)
 
     data[url].add(code, size, time)
-  rescue Exception => e
+  rescue Exception => _
     # Oops
   end
 end

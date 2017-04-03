@@ -83,7 +83,7 @@ ARGF.each do |line|
     data[at] = Note.new(at) unless data.key?(at)
 
     data[at].add(time)
-  rescue Exception => e
+  rescue Exception => _
     # Oops
   end
 end

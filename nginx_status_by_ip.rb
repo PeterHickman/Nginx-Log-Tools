@@ -2,7 +2,7 @@
 # encoding: UTF-8
 
 # Parse nginx log files show the status codes by ip address
-# 
+#
 # | ip_address      |    count |    2xx |    3xx |    4xx |    5xx |
 # +-----------------+----------+--------+--------+--------+--------+
 # | 1.40.124.54     |       64 |     58 |      0 |      0 |      6 |
@@ -55,7 +55,7 @@ class Note
 end
 
 def get_ip(text)
-  x = text.gsub(',','').split(/\s+/)
+  x = text.delete(',').split(/\s+/)
 
   private_ip = '0.0.0.0'
 
@@ -69,7 +69,7 @@ def get_ip(text)
     end
   end
 
-  return private_ip
+  private_ip
 end
 
 data = {}
@@ -102,7 +102,7 @@ ARGF.each do |line|
     data[ip] = Note.new(ip) unless data.key?(ip)
 
     data[ip].add(code)
-  rescue Exception => e
+  rescue Exception => _
     # Oops
   end
 end
@@ -115,7 +115,7 @@ puts '+-----------------+----------+--------+--------+--------+--------+'
 
 report_data = {}
 data.keys.each do |k|
-  x = k.split('.').map{|y| y.to_i}
+  x = k.split('.').map(&:to_i)
   z = 0
   x.each do |y|
     z = (z * 256) + y

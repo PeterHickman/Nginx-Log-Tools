@@ -2,7 +2,7 @@
 # encoding: UTF-8
 
 # Parse nginx log files show the status codes by hour
-# 
+#
 # | date_and_hour |    count |    2xx |    3xx |    4xx |    5xx |
 # +---------------+----------+--------+--------+--------+--------+
 # | 2016-06-02 06 |     1558 |    829 |      0 |    729 |      0 |
@@ -83,7 +83,7 @@ ARGF.each do |line|
     data[at] = Note.new(at) unless data.key?(at)
 
     data[at].add(code)
-  rescue Exception => e
+  rescue Exception => _
     # Oops
   end
 end
