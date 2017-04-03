@@ -4,6 +4,24 @@ Every time something crops up I find myself writing a tool to chop up the log fi
 find out what was happening. These are the more general of the tools that I have created 
 over the years so I know where to find them in the future
 
+## Response times by hours
+
+This, `nginx_response_by_hour.rb` takes a list of log files from the command line and and reports the total number of request per hour and report the minimum, average and maximum response times
+
+  | date_and_hour |    count |      min |      avg |      max |
+  +---------------+----------+----------+----------+----------+
+  | 2017-04-03 06 |    22181 |    0.001 |    0.116 |    1.214 |
+  | 2017-04-03 07 |    80224 |    0.001 |    0.162 |    2.622 |
+  | 2017-04-03 08 |    74263 |    0.001 |    0.135 |    2.621 |
+  | 2017-04-03 09 |    77335 |    0.001 |    0.128 |    1.776 |
+  | 2017-04-03 10 |    74989 |    0.001 |    0.114 |    1.333 |
+  | 2017-04-03 11 |    76663 |    0.001 |    0.133 |    1.402 |
+  | 2017-04-03 12 |    73700 |    0.000 |    0.162 |    2.562 |
+  | 2017-04-03 13 |    76408 |    0.001 |    0.119 |    1.258 |
+  | 2017-04-03 14 |    65781 |    0.000 |    0.162 |    2.402 |
+
+The script currently rejects urls that are for status media such as `.css`, `.js` or `.png`
+
 ## Status by hours
 
 This, `nginx_status_by_hour.rb` takes a list of log files from the command line and and 
