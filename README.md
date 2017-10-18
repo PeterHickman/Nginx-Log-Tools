@@ -6,7 +6,7 @@ over the years so I know where to find them in the future
 
 ## Response times by hours
 
-This, `nginx_response_by_hour.rb` takes a list of log files from the command line and and reports the total number of request per hour and report the minimum, average and maximum response times
+This, `nginx_response_by_hour.rb`, takes a list of log files from the command line and and reports the total number of request per hour and report the minimum, average and maximum response times
 
     | date_and_hour |    count |      min |      avg |      max |
     +---------------+----------+----------+----------+----------+
@@ -24,7 +24,7 @@ The script currently rejects urls that are for status media such as `.css`, `.js
 
 ## Status by hours
 
-This, `nginx_status_by_hour.rb` takes a list of log files from the command line and and 
+This, `nginx_status_by_hour.rb`, takes a list of log files from the command line and and 
 reports the total number of request per hour and breaks then down by response codes, `2xx`, 
 `3xx`, `4xx` and `5xx`
 
