@@ -3,24 +3,14 @@
 
 # Parse nginx log files show the status codes by ip address
 #
-# | ip_address      |    count |    2xx |    3xx |    4xx |    5xx |
-# +-----------------+----------+--------+--------+--------+--------+
-# | 1.40.124.54     |       64 |     58 |      0 |      0 |      6 |
-# | 1.42.8.144      |        1 |      1 |      0 |      0 |      0 |
-# | 1.42.136.244    |       22 |     22 |      0 |      0 |      0 |
-# | 1.42.142.124    |      342 |    342 |      0 |      0 |      0 |
-# | 1.43.77.62      |        8 |      3 |      0 |      0 |      5 |
-# | 1.120.98.188    |      629 |    131 |    498 |      0 |      0 |
-# | 1.120.104.129   |       13 |      8 |      0 |      0 |      5 |
-# | 1.120.110.132   |       11 |      2 |      0 |      0 |      9 |
-# | 1.120.138.52    |        1 |      1 |      0 |      0 |      0 |
-# | 1.120.139.195   |     3125 |   3125 |      0 |      0 |      0 |
-# | 1.120.143.90    |        4 |      0 |      0 |      0 |      4 |
-# | 1.120.145.241   |       14 |      1 |     12 |      0 |      1 |
-# | 1.120.159.31    |        2 |      0 |      0 |      0 |      2 |
-# | 1.121.101.202   |        3 |      3 |      0 |      0 |      0 |
-# | 1.121.102.122   |       41 |      2 |      0 |      0 |     39 |
-# | 1.121.166.155   |        3 |      0 |      0 |      0 |      3 |
+# | ip_address      |    count |      % |    2xx |    3xx |    4xx |    5xx |   2xx% |   3xx% |   4xx% |   5xx% |
+# +-----------------+----------+--------+--------+--------+--------+--------+--------+--------+--------+--------+
+# | 10.40.247.5     |   131714 |  26.61 |  35294 |      0 |      0 |  96420 |  26.80 |   0.00 |   0.00 |  73.20 |
+# | 10.40.247.7     |   217159 |  43.87 |  57432 |      0 |      0 | 159727 |  26.45 |   0.00 |   0.00 |  73.55 |
+# | 84.20.195.94    |    71363 |  14.42 |  71363 |      0 |      0 |      0 | 100.00 |   0.00 |   0.00 |   0.00 |
+# | 84.20.199.94    |    72802 |  14.71 |  72802 |      0 |      0 |      0 | 100.00 |   0.00 |   0.00 |   0.00 |
+# | 162.13.82.178   |     1939 |   0.39 |   1939 |      0 |      0 |      0 | 100.00 |   0.00 |   0.00 |   0.00 |
+# | 213.157.188.71  |       27 |   0.01 |     25 |      2 |      0 |      0 |  92.59 |   7.41 |   0.00 |   0.00 |
 
 require 'time'
 
@@ -55,7 +45,7 @@ class Note
 end
 
 def get_ip(text)
-  x = text.delete(',').split(/\s+/)
+  x = text.gsub(',','').split(/\s+/)
 
   private_ip = '0.0.0.0'
 
@@ -69,53 +59,56 @@ def get_ip(text)
     end
   end
 
-  private_ip
+  return private_ip
 end
 
 data = {}
 
 ARGF.each do |line|
-  begin
-    x = line.split(/\s+/)
-    pos = nil
-    x.each_with_index do |e, i|
-      if e.include?('HTTP/1')
-        pos = i
-        break
-      end
+  x = line.split(/\s+/)
+  pos = nil
+  x.each_with_index do |e, i|
+    if e.include?('HTTP/1')
+      pos = i
+      break
     end
-
-    next unless pos
-
-    code = x[pos + 1]
-
-    pos = nil
-    x.each_with_index do |e, i|
-      if e.index('[') == 0
-        pos = i
-        break
-      end
-    end
-
-    ip = get_ip(x[0...pos].join(' '))
-
-    data[ip] = Note.new(ip) unless data.key?(ip)
-
-    data[ip].add(code)
-  rescue Exception => _
-    # Oops
   end
+
+  next unless pos
+
+  # Include only the hour
+  code = x[pos + 1]
+
+  pos = nil
+  x.each_with_index do |e, i|
+    if e.index('[') == 0
+      pos = i
+      break
+    end
+  end
+
+  ip = get_ip(x[0...pos].join(' '))
+
+  data[ip] = Note.new(ip) unless data.key?(ip)
+
+  data[ip].add(code)
 end
 
-format1 = '| %-15s | %8s | %6s | %6s | %6s | %6s |'
-format2 = '| %-15s | %8d | %6d | %6d | %6d | %6d |'
+format1 = '| %-15s | %8s | %6s | %6s | %6s | %6s | %6s | %6s | %6s | %6s | %6s |'
+format2 = '| %-15s | %8d | %6.2f | %6d | %6d | %6d | %6d | %6.2f | %6.2f | %6.2f | %6.2f |'
 
-puts format1 % %w(ip_address count 2xx 3xx 4xx 5xx)
-puts '+-----------------+----------+--------+--------+--------+--------+'
+puts format1 % %w(ip_address count % 2xx 3xx 4xx 5xx 2xx% 3xx% 4xx% 5xx%)
+puts '+-----------------+----------+--------+--------+--------+--------+--------+--------+--------+--------+--------+'
+
+total = 0
+data.values.each do |v|
+  total += v.count
+end
+total = total.to_f
 
 report_data = {}
 data.keys.each do |k|
-  x = k.split('.').map(&:to_i)
+  x = k.split('.').map{|y| y.to_i}
   z = 0
   x.each do |y|
     z = (z * 256) + y
@@ -126,5 +119,5 @@ end
 
 report_data.keys.sort.each do |k|
   x = data[report_data[k]]
-  puts format2 % [x.key, x.count, x.code2, x.code3, x.code4, x.code5]
+  puts format2 % [x.key, x.count, x.count.to_f / total * 100.0, x.code2, x.code3, x.code4, x.code5, (x.code2.to_f / x.count.to_f) * 100, (x.code3.to_f / x.count.to_f) * 100, (x.code4.to_f / x.count.to_f) * 100, (x.code5.to_f / x.count.to_f) * 100]
 end
