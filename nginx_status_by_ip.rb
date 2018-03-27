@@ -14,6 +14,8 @@
 
 require 'time'
 
+TOTAL = '**total**'
+
 class Note
   attr_reader :key, :count, :code2, :code3, :code4, :code5
 
@@ -42,6 +44,28 @@ class Note
       @code5 += 1
     end
   end
+
+  def code2percent
+    percent(@code2)
+  end
+
+  def code3percent
+    percent(@code3)
+  end
+
+  def code4percent
+    percent(@code4)
+  end
+
+  def code5percent
+    percent(@code5)
+  end
+
+  private
+
+  def percent(value)
+    (value.to_f / @count.to_f) * 100.0
+  end
 end
 
 def get_ip(text)
@@ -64,6 +88,8 @@ end
 
 data = {}
 total = 0.0
+
+data[TOTAL] = Note.new(TOTAL)
 
 ARGF.each do |line|
   x = line.split(/\s+/)
@@ -93,6 +119,7 @@ ARGF.each do |line|
   data[ip] = Note.new(ip) unless data.key?(ip)
 
   data[ip].add(code)
+  data[TOTAL].add(code)
   total += 1.0
 end
 
@@ -104,6 +131,8 @@ puts '+-----------------+----------+--------+--------+--------+--------+--------
 
 report_data = {}
 data.keys.each do |k|
+  next if k == TOTAL
+
   x = k.split('.').map{|y| y.to_i}
   z = 0
   x.each do |y|
@@ -115,5 +144,8 @@ end
 
 report_data.keys.sort.each do |k|
   x = data[report_data[k]]
-  puts format2 % [x.key, x.count, x.count.to_f / total * 100.0, x.code2, x.code3, x.code4, x.code5, (x.code2.to_f / x.count.to_f) * 100, (x.code3.to_f / x.count.to_f) * 100, (x.code4.to_f / x.count.to_f) * 100, (x.code5.to_f / x.count.to_f) * 100]
+  puts format2 % [x.key, x.count, x.count.to_f / total * 100.0, x.code2, x.code3, x.code4, x.code5, x.code2percent, x.code3percent, x.code4percent, x.code5percent]
 end
+puts '+-----------------+----------+--------+--------+--------+--------+--------+--------+--------+--------+--------+'
+x = data[TOTAL]
+puts format2 % [x.key, x.count, x.count.to_f / total * 100.0, x.code2, x.code3, x.code4, x.code5, x.code2percent, x.code3percent, x.code4percent, x.code5percent]
