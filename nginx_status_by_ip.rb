@@ -63,6 +63,7 @@ def get_ip(text)
 end
 
 data = {}
+total = 0.0
 
 ARGF.each do |line|
   x = line.split(/\s+/)
@@ -92,6 +93,7 @@ ARGF.each do |line|
   data[ip] = Note.new(ip) unless data.key?(ip)
 
   data[ip].add(code)
+  total += 1.0
 end
 
 format1 = '| %-15s | %8s | %6s | %6s | %6s | %6s | %6s | %6s | %6s | %6s | %6s |'
@@ -99,12 +101,6 @@ format2 = '| %-15s | %8d | %6.2f | %6d | %6d | %6d | %6d | %6.2f | %6.2f | %6.2f
 
 puts format1 % %w(ip_address count % 2xx 3xx 4xx 5xx 2xx% 3xx% 4xx% 5xx%)
 puts '+-----------------+----------+--------+--------+--------+--------+--------+--------+--------+--------+--------+'
-
-total = 0
-data.values.each do |v|
-  total += v.count
-end
-total = total.to_f
 
 report_data = {}
 data.keys.each do |k|
