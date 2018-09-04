@@ -101,13 +101,17 @@ puts '+---------------+----------+--------+--------+--------+--------+'
 
 report_data = {}
 data.keys.each do |k|
-  nk = k.dup
-  nk[11] = ' '
-  nk += ':00:00'
+  begin
+    nk = k.dup
+    nk[11] = ' '
+    nk += ':00:00'
 
-  nk = Time.parse(nk).strftime('%Y-%m-%d %H')
+    nk = Time.parse(nk).strftime('%Y-%m-%d %H')
 
-  report_data[nk] = k
+    report_data[nk] = k
+  rescue => e
+    # It's actually cheaper to catch the error here than when parsing the line
+  end
 end
 
 report_data.keys.sort.each do |k|
