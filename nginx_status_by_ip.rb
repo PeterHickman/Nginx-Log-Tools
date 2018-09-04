@@ -92,6 +92,8 @@ total = 0.0
 data[TOTAL] = Note.new(TOTAL)
 
 ARGF.each do |line|
+  next unless line.include?(' HTTP/1')
+
   x = line.split(/\s+/)
   pos = nil
   x.each_with_index do |e, i|

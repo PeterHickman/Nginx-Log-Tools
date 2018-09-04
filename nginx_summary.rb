@@ -73,6 +73,8 @@ end
 data = {}
 
 ARGF.each do |line|
+  next unless line.include?(' HTTP/1')
+
   begin
     x = line.split(/\s+/)
     pos = nil
