@@ -4,11 +4,9 @@
 require 'time'
 
 class MinimumAverageMaximum
-  attr_reader :key, :count, :min, :max
+  attr_reader :key, :count, :min, :max, :total
 
-  def initialize(key)
-    @key = key
-
+  def initialize
     @count = 0.0
 
     @total = 0.0
@@ -17,6 +15,8 @@ class MinimumAverageMaximum
   end
 
   def add(value)
+    value = value.to_f
+
     if @count == 0.0
       @min = value
       @max = value
@@ -37,9 +37,7 @@ end
 class Statuses
   attr_reader :key, :count, :code2, :code3, :code4, :code5
 
-  def initialize(key)
-    @key = key
-
+  def initialize
     @count = 0
 
     @code2 = 0
@@ -67,8 +65,19 @@ end
 REPORT = '--report'.freeze
 BY     = '--by'.freeze
 
-REPORT_VALUES = %w(status size response).freeze
-BY_VALUES     = %w(hour ip).freeze
+REPORT_OFFSETS = {
+  'status'   => 1,
+  'size'     => 2, 
+  'response' => 3
+}.freeze
+
+REPORT_CLASSES = {
+  'status'   => Statuses,
+  'size'     => MinimumAverageMaximum,
+  'response' => MinimumAverageMaximum
+}.freeze
+
+BY_VALUES = %w(hour ip).freeze
 
 def opts
   ##
@@ -118,7 +127,7 @@ end
 
 def valid_options(options)
   raise "Missing option #{REPORT}" unless options.key?(REPORT)
-  raise "Argument to #{REPORT} must be either 'status', 'size' or 'response'" unless REPORT_VALUES.include?(options[REPORT])
+  raise "Argument to #{REPORT} must be either 'status', 'size' or 'response'" unless REPORT_OFFSETS.key?(options[REPORT])
 
   raise "Missing option #{BY}" unless options.key?(BY)
   raise "Argument to #{BY} must be either 'hour' or 'ip'" unless BY_VALUES.include?(options[BY])
@@ -132,8 +141,36 @@ def valid_options(options)
   end
 end
 
-def process_line(line)
-  puts line.upcase
+def process_line(line, data, by, data_class, data_offset)
+  return unless line.include?('HTTP')
+
+  parts = line.split(/\s+/)
+  pos = nil
+  parts.each_with_index do |e, i|
+    if e.include?('HTTP/1')
+      pos = i
+      break
+    end
+  end
+
+  return unless pos
+
+  k = by == 'ip' ? parts[0] : parts[pos - 4][1..14]
+
+  data[k] = data_class.new unless data.key?(k)
+  data[k].add(parts[pos + data_offset])
+end
+
+def format_date(date)
+  begin
+    nk = date.dup
+    nk[11] = ' '
+    nk += ':00:00'
+
+    return Time.parse(nk).strftime('%Y-%m-%d %H')
+  rescue => e
+    return
+  end
 end
 
 options, arguments = opts
@@ -143,14 +180,77 @@ valid_options(options)
 report = options[REPORT]
 by     = options[BY]
 
+data_offset = REPORT_OFFSETS[report]
+
+data_class = REPORT_CLASSES[report]
+
+data = {}
+
 if arguments.any?
   arguments.each do |filename|
     File.open(filename, 'r').each do |line|
-      process_line(line)
+      process_line(line, data, by, data_class, data_offset)
     end
   end
 else
   STDIN.read.split("\n").each do |line|
-    process_line(line)
+    process_line(line, data, by, data_class, data_offset)
+  end
+end
+
+header = []
+line = []
+
+case by
+when 'hour'
+  header << '%-13s' % 'date_and_hour'
+  line << '%-13s'
+when 'ip'
+  header << '%-15s' % 'ip_address'
+  line << '%-15s'
+end
+
+case report
+when 'status'
+  header << '%8s' % 'count'
+  header << '%6s' % '2xx'
+  header << '%6s' % '3xx'
+  header << '%6s' % '4xx'
+  header << '%6s' % '5xx'
+
+  line += ['%8d', '%6d', '%6d', '%6d', '%6d']
+when 'size'
+  header << '%8s' % 'count'
+  header << '%15s' % 'total'
+  header << '%15s' % 'min'
+  header << '%15s' % 'avg'
+  header << '%15s' % 'max'
+
+  line += ['%8d', '%15d', '%15d', '%15d', '%15d']
+when 'response'
+  header << '%8s' % 'count'
+  header << '%8s' % 'min'
+  header << '%8s' % 'avg'
+  header << '%8s' % 'max'
+
+  line += ['%8d', '%8.3f', '%8.3f', '%8.3f']
+end
+
+puts "| #{header.join(' | ')} |"
+puts "+-#{header.map{|i| '-' * i.size}.join('-|-')}-+"
+
+x = "| #{line.join(' | ')} |"
+
+data.each do |k, v|
+  k = format_date(k) if by == 'hour'
+  next unless k
+
+  case report
+  when 'status'
+    puts x % [k, v.count, v.code2, v.code3, v.code4, v.code5]
+  when 'size'
+    puts x % [k, v.count, v.total, v.min, v.average, v.max]
+  when 'response'
+    puts x % [k, v.count, v.min, v.average, v.max]
   end
 end
