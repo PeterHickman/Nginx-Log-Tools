@@ -252,7 +252,7 @@ end
 header, line = setup_display(by, report)
 
 puts "| #{header.join(' | ')} |"
-puts "+-#{header.map{|i| '-' * i.size}.join('-|-')}-+"
+puts "+-#{header.map{|i| '-' * i.size}.join('-+-')}-+"
 
 x = "| #{line.join(' | ')} |"
 
