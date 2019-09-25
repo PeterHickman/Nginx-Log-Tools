@@ -65,16 +65,10 @@ end
 REPORT = '--report'.freeze
 BY     = '--by'.freeze
 
-REPORT_OFFSETS = {
-  'status'   => 1,
-  'size'     => 2, 
-  'response' => 3
-}.freeze
-
-REPORT_CLASSES = {
-  'status'   => Statuses,
-  'size'     => MinimumAverageMaximum,
-  'response' => MinimumAverageMaximum
+REPORT_VALUES = {
+  'status'   => { 'offset' => 1, 'class' => Statuses },
+  'size'     => { 'offset' => 2, 'class' => MinimumAverageMaximum },
+  'response' => { 'offset' => 3, 'class' => MinimumAverageMaximum }
 }.freeze
 
 BY_VALUES = %w(hour ip).freeze
@@ -127,10 +121,10 @@ end
 
 def valid_options(options)
   raise "Missing option #{REPORT}" unless options.key?(REPORT)
-  raise "Argument to #{REPORT} must be either 'status', 'size' or 'response'" unless REPORT_OFFSETS.key?(options[REPORT])
+  raise "Argument to #{REPORT} must be one of '#{REPORT_VALUES.keys.join("', '")}'" unless REPORT_VALUES.key?(options[REPORT])
 
   raise "Missing option #{BY}" unless options.key?(BY)
-  raise "Argument to #{BY} must be either 'hour' or 'ip'" unless BY_VALUES.include?(options[BY])
+  raise "Argument to #{BY} must be one of '#{BY_VALUES.keys.join("', '")}'" unless BY_VALUES.include?(options[BY])
 
   if options.size > 2
     x = options.keys
@@ -141,7 +135,7 @@ def valid_options(options)
   end
 end
 
-def process_line(line, data, by, data_class, data_offset)
+def process_line(line, data, by, report_values)
   return unless line.include?('HTTP')
 
   parts = line.split(/\s+/)
@@ -157,8 +151,8 @@ def process_line(line, data, by, data_class, data_offset)
 
   k = by == 'ip' ? parts[0] : parts[pos - 4][1..14]
 
-  data[k] = data_class.new unless data.key?(k)
-  data[k].add(parts[pos + data_offset])
+  data[k] = report_values['class'].new unless data.key?(k)
+  data[k].add(parts[pos + report_values['offset']])
 end
 
 def format_date(date)
@@ -173,6 +167,67 @@ def format_date(date)
   end
 end
 
+def setup_display(by, report)
+  header = []
+  line = []
+
+  case by
+  when 'hour'
+    header << '%-13s' % 'date_and_hour'
+    line << '%-13s'
+  when 'ip'
+    header << '%-15s' % 'ip_address'
+    line << '%-15s'
+  end
+
+  case report
+  when 'status'
+    header << '%8s' % 'count'
+    header << '%6s' % '2xx'
+    header << '%6s' % '3xx'
+    header << '%6s' % '4xx'
+    header << '%6s' % '5xx'
+
+    line += ['%8d', '%6d', '%6d', '%6d', '%6d']
+  when 'size'
+    header << '%8s' % 'count'
+    header << '%15s' % 'total'
+    header << '%15s' % 'min'
+    header << '%15s' % 'avg'
+    header << '%15s' % 'max'
+
+    line += ['%8d', '%15d', '%15d', '%15d', '%15d']
+  when 'response'
+    header << '%8s' % 'count'
+    header << '%8s' % 'min'
+    header << '%8s' % 'avg'
+    header << '%8s' % 'max'
+
+    line += ['%8d', '%8.3f', '%8.3f', '%8.3f']
+  end
+
+  [header, line]
+end
+
+def sorted_keys(by, keys)
+  x = {}
+
+  case by
+  when 'hour'
+    keys.each do |k|
+      y = format_date(k)
+      next unless y
+      x[y] = k
+    end
+  when 'ip'
+    keys.each do |k|
+      x[k] = k
+    end
+  end
+
+  x
+end
+
 options, arguments = opts
 
 valid_options(options)
@@ -180,70 +235,31 @@ valid_options(options)
 report = options[REPORT]
 by     = options[BY]
 
-data_offset = REPORT_OFFSETS[report]
-
-data_class = REPORT_CLASSES[report]
-
 data = {}
 
 if arguments.any?
   arguments.each do |filename|
     File.open(filename, 'r').each do |line|
-      process_line(line, data, by, data_class, data_offset)
+      process_line(line, data, by, REPORT_VALUES[report])
     end
   end
 else
   STDIN.read.split("\n").each do |line|
-    process_line(line, data, by, data_class, data_offset)
+    process_line(line, data, by, REPORT_VALUES[report])
   end
 end
 
-header = []
-line = []
-
-case by
-when 'hour'
-  header << '%-13s' % 'date_and_hour'
-  line << '%-13s'
-when 'ip'
-  header << '%-15s' % 'ip_address'
-  line << '%-15s'
-end
-
-case report
-when 'status'
-  header << '%8s' % 'count'
-  header << '%6s' % '2xx'
-  header << '%6s' % '3xx'
-  header << '%6s' % '4xx'
-  header << '%6s' % '5xx'
-
-  line += ['%8d', '%6d', '%6d', '%6d', '%6d']
-when 'size'
-  header << '%8s' % 'count'
-  header << '%15s' % 'total'
-  header << '%15s' % 'min'
-  header << '%15s' % 'avg'
-  header << '%15s' % 'max'
-
-  line += ['%8d', '%15d', '%15d', '%15d', '%15d']
-when 'response'
-  header << '%8s' % 'count'
-  header << '%8s' % 'min'
-  header << '%8s' % 'avg'
-  header << '%8s' % 'max'
-
-  line += ['%8d', '%8.3f', '%8.3f', '%8.3f']
-end
+header, line = setup_display(by, report)
 
 puts "| #{header.join(' | ')} |"
 puts "+-#{header.map{|i| '-' * i.size}.join('-|-')}-+"
 
 x = "| #{line.join(' | ')} |"
 
-data.each do |k, v|
-  k = format_date(k) if by == 'hour'
-  next unless k
+sk = sorted_keys(by, data.keys)
+
+sk.keys.sort.each do |k|
+  v = data[sk[k]]
 
   case report
   when 'status'
