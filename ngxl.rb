@@ -71,7 +71,7 @@ REPORT_VALUES = {
   'response' => { 'offset' => 3, 'class' => MinimumAverageMaximum }
 }.freeze
 
-BY_VALUES = %w(hour ip).freeze
+BY_VALUES = %w[hour ip].freeze
 
 def opts
   ##
@@ -126,13 +126,13 @@ def valid_options(options)
   raise "Missing option #{BY}" unless options.key?(BY)
   raise "Argument to #{BY} must be one of '#{BY_VALUES.keys.join("', '")}'" unless BY_VALUES.include?(options[BY])
 
-  if options.size > 2
-    x = options.keys
-    x.delete(REPORT)
-    x.delete(BY)
+  return unless options.size > 2
 
-    raise "Unknown option(s) #{x.inspect}"
-  end
+  x = options.keys
+  x.delete(REPORT)
+  x.delete(BY)
+
+  raise "Unknown option(s) #{x.inspect}"
 end
 
 def process_line(line, data, by, report_values)
@@ -140,11 +140,13 @@ def process_line(line, data, by, report_values)
 
   parts = line.split(/\s+/)
   pos = nil
-  parts.each_with_index do |e, i|
+  i = 0
+  parts.each do |e|
     if e.include?('HTTP/1')
       pos = i
       break
     end
+    i += 1
   end
 
   return unless pos
@@ -156,15 +158,12 @@ def process_line(line, data, by, report_values)
 end
 
 def format_date(date)
-  begin
-    nk = date.dup
-    nk[11] = ' '
-    nk += ':00:00'
+  nk = date.dup
+  nk[11] = ' '
+  nk += ':00:00'
 
-    return Time.parse(nk).strftime('%Y-%m-%d %H')
-  rescue => e
-    return
-  end
+  Time.parse(nk).strftime('%Y-%m-%d %H')
+rescue
 end
 
 def setup_display(by, report)
@@ -217,6 +216,7 @@ def sorted_keys(by, keys)
     keys.each do |k|
       y = format_date(k)
       next unless y
+
       x[y] = k
     end
   when 'ip'
@@ -252,7 +252,7 @@ end
 header, line = setup_display(by, report)
 
 puts "| #{header.join(' | ')} |"
-puts "+-#{header.map{|i| '-' * i.size}.join('-+-')}-+"
+puts "+-#{header.map { |i| '-' * i.size }.join('-+-')}-+"
 
 x = "| #{line.join(' | ')} |"
 
