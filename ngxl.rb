@@ -136,11 +136,10 @@ def valid_options(options)
 end
 
 def process_line(line, data, by, report_values)
-  return unless line.include?('HTTP')
-
   parts = line.split(/\s+/)
   pos = nil
   i = 0
+
   parts.each do |e|
     if e.include?('HTTP/1')
       pos = i
