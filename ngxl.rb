@@ -135,25 +135,27 @@ def valid_options(options)
   raise "Unknown option(s) #{x.inspect}"
 end
 
-def process_line(line, data, by, report_values)
-  parts = line.split(/\s+/)
-  pos = nil
-  i = 0
+def process_line_from_file(fh, data, by, report_values)
+  fh.each do |line|
+    parts = line.split(/\s+/)
+    pos = nil
+    i = 0
 
-  parts.each do |e|
-    if e.include?('HTTP/1')
-      pos = i
-      break
+    parts.each do |e|
+      if e.include?('HTTP/1')
+        pos = i
+        break
+      end
+      i += 1
     end
-    i += 1
+
+    next unless pos
+
+    k = by == 'ip' ? parts[0] : parts[pos - 4][1..14]
+
+    data[k] = report_values['class'].new unless data.key?(k)
+    data[k].add(parts[pos + report_values['offset']])
   end
-
-  return unless pos
-
-  k = by == 'ip' ? parts[0] : parts[pos - 4][1..14]
-
-  data[k] = report_values['class'].new unless data.key?(k)
-  data[k].add(parts[pos + report_values['offset']])
 end
 
 def format_date(date)
@@ -238,14 +240,12 @@ data = {}
 
 if arguments.any?
   arguments.each do |filename|
-    File.open(filename, 'r').each do |line|
-      process_line(line, data, by, REPORT_VALUES[report])
-    end
+    fh = File.open(filename, 'r')
+    process_line_from_file(fh, data, by, REPORT_VALUES[report])
+    fh.close
   end
 else
-  STDIN.read.split("\n").each do |line|
-    process_line(line, data, by, REPORT_VALUES[report])
-  end
+  process_line_from_file(STDIN, data, by, REPORT_VALUES[report])
 end
 
 header, line = setup_display(by, report)
