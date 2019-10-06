@@ -73,6 +73,26 @@ REPORT_VALUES = {
 
 BY_VALUES = %w[hour ip].freeze
 
+def usage(message)
+  puts "ERROR: #{message}"
+  puts
+  puts <<-EOM
+ngxl --report status|size|reponse --by hour|ip <list of Nginx log files>
+
+  Will process the nginx log files and report either the status (by class),
+  size of the response in bytes (giving the total, minimum, average and maximum)
+  or response times (also with minimum, average and maximum)
+
+  Each line of the report will be either the hour that the data was
+  recorded in or the ip address that the request was made from
+
+  The log lines can be read from stdin if you need to pipe them (through
+  grep perhaps)
+EOM
+
+  exit
+end
+
 def opts
   ##
   # Assumes that the options, in long format such as "--file xxx",
@@ -120,11 +140,11 @@ def opts
 end
 
 def valid_options(options)
-  raise "Missing option #{REPORT}" unless options.key?(REPORT)
-  raise "Argument to #{REPORT} must be one of '#{REPORT_VALUES.keys.join("', '")}'" unless REPORT_VALUES.key?(options[REPORT])
+  usage "Missing option #{REPORT}" unless options.key?(REPORT)
+  usage "Argument to #{REPORT} must be one of '#{REPORT_VALUES.keys.join("', '")}'" unless REPORT_VALUES.key?(options[REPORT])
 
-  raise "Missing option #{BY}" unless options.key?(BY)
-  raise "Argument to #{BY} must be one of '#{BY_VALUES.keys.join("', '")}'" unless BY_VALUES.include?(options[BY])
+  usage "Missing option #{BY}" unless options.key?(BY)
+  usage "Argument to #{BY} must be one of '#{BY_VALUES.keys.join("', '")}'" unless BY_VALUES.include?(options[BY])
 
   return unless options.size > 2
 
@@ -132,7 +152,7 @@ def valid_options(options)
   x.delete(REPORT)
   x.delete(BY)
 
-  raise "Unknown option(s) #{x.inspect}"
+  usage "Unknown option(s) #{x.inspect}"
 end
 
 def process_line_from_file(fh, data, by, report_values)
