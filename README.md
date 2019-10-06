@@ -4,95 +4,112 @@ Every time something crops up I find myself writing a tool to chop up the log fi
 find out what was happening. These are the more general of the tools that I have created 
 over the years so I know where to find them in the future
 
-## Response times by hours
+## What data is reported
 
-This, `nginx_response_by_hour.rb`, takes a list of log files from the command line and and reports the total number of request per hour and report the minimum, average and maximum response times
+The application can report three things:
 
-    | date_and_hour |    count |      min |      avg |      max |
-    +---------------+----------+----------+----------+----------+
-    | 2017-04-03 06 |    22181 |    0.001 |    0.116 |    1.214 |
-    | 2017-04-03 07 |    80224 |    0.001 |    0.162 |    2.622 |
-    | 2017-04-03 08 |    74263 |    0.001 |    0.135 |    2.621 |
-    | 2017-04-03 09 |    77335 |    0.001 |    0.128 |    1.776 |
-    | 2017-04-03 10 |    74989 |    0.001 |    0.114 |    1.333 |
-    | 2017-04-03 11 |    76663 |    0.001 |    0.133 |    1.402 |
-    | 2017-04-03 12 |    73700 |    0.000 |    0.162 |    2.562 |
-    | 2017-04-03 13 |    76408 |    0.001 |    0.119 |    1.258 |
-    | 2017-04-03 14 |    65781 |    0.000 |    0.162 |    2.402 |
+1. **`response`** The minimum, average and maximum response times for a request. Shown here by hour
 
-The script currently rejects urls that are for status media such as `.css`, `.js` or `.png`
 
-## Status by hours
+		$ ngxl --report response --by hour <log files>
+		
+		| date_and_hour |    count |      min |      avg |      max |
+		+---------------+----------+----------+----------+----------+
+		| 2019-09-24 06 |    11623 |    0.006 |    0.616 |    8.219 |
+		| 2019-09-24 07 |   102476 |    0.011 |    0.610 |    8.744 |
+		| 2019-09-24 08 |   103262 |    0.000 |    0.609 |    8.537 |
+		| 2019-09-24 09 |   103537 |    0.000 |    0.608 |    8.594 |
+		| 2019-09-24 10 |   103746 |    0.000 |    0.608 |    8.969 |
+		| 2019-09-24 11 |   103653 |    0.010 |    0.611 |    8.630 |
+		| 2019-09-24 12 |   103392 |    0.012 |    0.612 |    9.005 |
+		| 2019-09-24 13 |   103423 |    0.007 |    0.616 |    9.182 |
+		| 2019-09-24 14 |   102568 |    0.000 |    0.614 |    8.781 |
+		| 2019-09-24 15 |    92875 |    0.012 |    0.608 |    8.946 |
 
-This, `nginx_status_by_hour.rb`, takes a list of log files from the command line and and 
-reports the total number of request per hour and breaks then down by response codes, `2xx`, 
-`3xx`, `4xx` and `5xx`
+2. **`status`** A count of the status codes by class
 
-Useful for seeing when things went south :(
+		$ ngxl --report status --by hour <log files>
+		
+		| date_and_hour |    count |    2xx |    3xx |    4xx |    5xx |
+		+---------------+----------+--------+--------+--------+--------+
+		| 2019-09-24 06 |    11623 |  11622 |      0 |      1 |      0 |
+		| 2019-09-24 07 |   102476 | 102476 |      0 |      0 |      0 |
+		| 2019-09-24 08 |   103262 | 103253 |      1 |      8 |      0 |
+		| 2019-09-24 09 |   103537 | 103533 |      3 |      1 |      0 |
+		| 2019-09-24 10 |   103746 | 103650 |      8 |     88 |      0 |
+		| 2019-09-24 11 |   103653 | 103644 |      2 |      6 |      1 |
+		| 2019-09-24 12 |   103392 | 103374 |      0 |     18 |      0 |
+		| 2019-09-24 13 |   103423 | 103422 |      1 |      0 |      0 |
+		| 2019-09-24 14 |   102568 | 102559 |      1 |      8 |      0 |
+		| 2019-09-24 15 |    92875 |  92875 |      0 |      0 |      0 |
 
-    | date_and_hour |    count |    2xx |    3xx |    4xx |    5xx |
-    +---------------+----------+--------+--------+--------+--------+
-    | 2016-06-02 06 |     1558 |    829 |      0 |    729 |      0 |
-    | 2016-06-02 07 |     3979 |   2174 |      1 |   1804 |      0 |
-    | 2016-06-02 08 |     4617 |   2494 |      1 |   2122 |      0 |
-    | 2016-06-02 09 |     4326 |   2347 |      2 |   1977 |      0 |
-    | 2016-06-02 10 |     4158 |   2265 |      4 |   1888 |      1 |
-    | 2016-06-02 11 |     4099 |   2236 |      3 |   1856 |      4 |
-    | 2016-06-02 12 |     3329 |   1855 |      1 |   1473 |      0 |
-    | 2016-06-02 13 |     3709 |   1892 |      0 |   1817 |      0 |
+3. **`size`** Reports the total size of all the responses along with their minimum. average and maximum
 
-The script currently rejects urls that are for status media such as `.css`, `.js` or `.png`
+		$ ngxl --report size --by hour <log files>
+		
+		| date_and_hour |    count |           total |             min |             avg |             max |
+		+---------------+----------+-----------------+-----------------+-----------------+-----------------+
+		| 2019-09-24 06 |    11623 |        58270082 |             439 |            5013 |         1149910 |
+		| 2019-09-24 07 |   102476 |       499856710 |             533 |            4877 |         1150518 |
+		| 2019-09-24 08 |   103262 |       504666038 |             245 |            4887 |         1150006 |
+		| 2019-09-24 09 |   103537 |       503025428 |               0 |            4858 |         1150701 |
+		| 2019-09-24 10 |   103746 |       504595496 |             245 |            4863 |         1149950 |
+		| 2019-09-24 11 |   103653 |       507222040 |             531 |            4893 |         1150091 |
+		| 2019-09-24 12 |   103392 |       496561788 |             520 |            4802 |         1150187 |
+		| 2019-09-24 13 |   103423 |       492099937 |             245 |            4758 |         1150099 |
+		| 2019-09-24 14 |   102568 |       496671806 |             245 |            4842 |         1150315 |
+		| 2019-09-24 15 |    92875 |       445168906 |             638 |            4793 |         1150115 |
 
-## Status by ip address
+## How the data is reported
 
-This, `nginx_status_by_ip.rb`, is less useful but still occasionally required. This counts the
-requests against the requesting ip address and splits them out by response codes. On occasions 
-this allows us to see which ip address is having an abnormal amount of difficulty
+As you can see above the data can be reported by hour. It can also be reported by ip. For example
 
-    | ip_address      |    count |    2xx |    3xx |    4xx |    5xx |
-    +-----------------+----------+--------+--------+--------+--------+
-    | 1.40.124.54     |       64 |     58 |      0 |      0 |      6 |
-    | 1.42.8.144      |        1 |      1 |      0 |      0 |      0 |
-    | 1.42.136.244    |       22 |     22 |      0 |      0 |      0 |
-    | 1.42.142.124    |      342 |    342 |      0 |      0 |      0 |
-    | 1.43.77.62      |        8 |      3 |      0 |      0 |      5 |
-    | 1.120.98.188    |      629 |    131 |    498 |      0 |      0 |
-    | 1.120.104.129   |       13 |      8 |      0 |      0 |      5 |
-    | 1.120.110.132   |       11 |      2 |      0 |      0 |      9 |
-    | 1.120.138.52    |        1 |      1 |      0 |      0 |      0 |
-    | 1.120.139.195   |     3125 |   3125 |      0 |      0 |      0 |
-    | 1.120.143.90    |        4 |      0 |      0 |      0 |      4 |
-    | 1.120.145.241   |       14 |      1 |     12 |      0 |      1 |
-    | 1.120.159.31    |        2 |      0 |      0 |      0 |      2 |
-    | 1.121.101.202   |        3 |      3 |      0 |      0 |      0 |
-    | 1.121.102.122   |       41 |      2 |      0 |      0 |     39 |
-    | 1.121.166.155   |        3 |      0 |      0 |      0 |      3 |
-
-We are assuming that the log file format has the requesting ip address followed by any X-FORWARDED-FOR 
-addresses and will only use a private ip address if there is no public ip address available
-
-## Summary
-
-The given log files are parsed and the request urls are munged so that `/data/line_ups/8262543` becomes
-`/data/line_ups/<NUMBER>`. Additionally dates in the format `YYYY-MM-DD` will become just `<DATE>`. The
-output is then sorted by total number of requests to show you the must popular urls are
-
-    | request_path                       |    count |     avg_size |       avg_ms |    2xx |    3xx |    4xx |    5xx |
-    +------------------------------------+----------+--------------+--------------+--------+--------+--------+--------+
-    | /data/updates                      |   103212 |    25126.731 |        0.037 | 103190 |      0 |      0 |     22 |
-    | /data/line_ups/<NUMBER>            |    86999 |      498.856 |        0.203 |  86951 |      0 |     17 |     31 |
-    | /data/form/<NUMBER>/en_GB          |    34896 |     2642.953 |        0.222 |  34883 |      0 |      0 |     13 |
-    | /match_detail/match_facts/<NUMBER> |    27578 |      358.919 |        0.023 |  27578 |      0 |      0 |      0 |
-    | /data/table/<NUMBER>               |    17510 |     1193.618 |        0.221 |  16969 |      0 |    511 |     30 |
-    | /data/form/<NUMBER>/es             |     8744 |     2749.374 |        0.148 |   8742 |      0 |      0 |      2 |
-    | /data/form/<NUMBER>/it             |     3494 |     2925.114 |        0.185 |   3492 |      0 |      0 |      2 |
-    | /data/live_scores                  |     3155 |      356.592 |        0.024 |   2664 |      0 |    489 |      2 |
-    | /data/form/<NUMBER>/en             |     2482 |     2292.352 |        0.076 |   2470 |      0 |     12 |      0 |
-    | /data/form/<NUMBER>/ru             |     1434 |     2167.534 |        0.109 |   1434 |      0 |      0 |      0 |
-    | /data/form/<NUMBER>/bg             |     1213 |     2574.702 |        0.120 |   1213 |      0 |      0 |      0 |
-
-The script currently rejects urls that are for status media such as `.css`, `.js` or `.png`. The query parameters are 
-removed from the url.
+		$ ngxl.rb --report status --by ip <log files>
+		
+		| ip_address      |    count |    2xx |    3xx |    4xx |    5xx |
+		+-----------------+----------+--------+--------+--------+--------+
+		| 10.181.201.246  |     2690 |   2690 |      0 |      0 |      0 |
+		| 134.213.150.114 |      126 |    126 |      0 |      0 |      0 |
+		| 134.213.56.245  |      126 |    126 |      0 |      0 |      0 |
+		| 134.213.58.233  |    32935 |  32935 |      0 |      0 |      0 |
+		| 141.138.130.1   |     1012 |   1012 |      0 |      0 |      0 |
+		| 141.138.134.1   |     3048 |   3048 |      0 |      0 |      0 |
+		| 176.58.124.134  |        1 |      0 |      0 |      1 |      0 |
+		| 185.119.152.38  |     1012 |   1012 |      0 |      0 |      0 |
+		| 212.22.234.47   |    24614 |  24614 |      0 |      0 |      0 |
+		| 213.187.236.32  |    63553 |  63553 |      0 |      0 |      0 |
+		| 220.238.156.239 |       36 |      9 |      3 |     24 |      0 |
+		| 31.222.58.6     |   162026 | 162026 |      0 |      0 |      0 |
+		| 34.253.163.217  |   105523 | 105523 |      0 |      0 |      0 |
+		| 52.212.44.165   |     3040 |   3040 |      0 |      0 |      0 |
+		| 52.215.78.102   |      648 |    648 |      0 |      0 |      0 |
+		| 52.232.67.76    |        2 |      1 |      1 |      0 |      0 |
+		| 52.31.67.157    |     9891 |   9891 |      0 |      0 |      0 |
+		| 52.51.101.91    |      480 |    480 |      0 |      0 |      0 |
+		| 54.37.17.195    |       96 |     96 |      0 |      0 |      0 |
+		| 54.37.18.96     |       76 |     76 |      0 |      0 |      0 |
+		| 54.37.19.80     |       70 |     70 |      0 |      0 |      0 |
+		| 54.72.171.131   |    10516 |  10516 |      0 |      0 |      0 |
+		| 63.34.213.250   |      125 |     21 |      0 |    104 |      0 |
+		| 81.132.110.249  |      161 |    158 |      3 |      0 |      0 |
+		| 85.199.212.121  |       19 |     19 |      0 |      0 |      0 |
+		| 85.199.212.122  |       12 |     12 |      0 |      0 |      0 |
+		| 85.199.212.123  |       18 |     18 |      0 |      0 |      0 |
+		| 85.199.212.124  |       11 |     11 |      0 |      0 |      0 |
+		| 85.199.212.125  |       14 |     14 |      0 |      0 |      0 |
+		| 85.199.212.126  |       14 |     14 |      0 |      0 |      0 |
+		| 88.151.157.235  |      151 |    140 |      9 |      1 |      1 |
+		| 91.211.96.165   |   154347 | 154347 |      0 |      0 |      0 |
+		| 91.211.99.90    |   161993 | 161993 |      0 |      0 |      0 |
+		| 91.230.243.134  |        2 |      2 |      0 |      0 |      0 |
+		| 91.230.243.135  |        1 |      1 |      0 |      0 |      0 |
+		| 91.230.243.136  |        9 |      9 |      0 |      0 |      0 |
+		| 91.230.243.137  |        5 |      5 |      0 |      0 |      0 |
+		| 91.230.243.138  |        2 |      2 |      0 |      0 |      0 |
+		| 91.230.243.139  |        2 |      2 |      0 |      0 |      0 |
+		| 93.191.194.10   |   162005 | 162005 |      0 |      0 |      0 |
+		| 94.125.56.56    |    30137 |  30137 |      0 |      0 |      0 |
+		| 94.14.154.19    |        6 |      6 |      0 |      0 |      0 |
 
 ## Other tools
 
