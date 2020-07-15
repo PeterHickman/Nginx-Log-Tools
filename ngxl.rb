@@ -71,19 +71,19 @@ REPORT_VALUES = {
   'response' => { 'offset' => 3, 'class' => MinimumAverageMaximum }
 }.freeze
 
-BY_VALUES = %w[hour ip].freeze
+BY_VALUES = %w[day hour ip].freeze
 
 def usage(message)
   puts "ERROR: #{message}"
   puts
   puts <<-EOM
-ngxl --report status|size|reponse --by hour|ip <list of Nginx log files>
+ngxl --report status|size|reponse --by hour|day|ip <list of Nginx log files>
 
   Will process the nginx log files and report either the status (by class),
   size of the response in bytes (giving the total, minimum, average and maximum)
   or response times (also with minimum, average and maximum)
 
-  Each line of the report will be either the hour that the data was
+  Each line of the report will be either the day or hour that the data was
   recorded in or the ip address that the request was made from
 
   The log lines can be read from stdin if you need to pipe them (through
@@ -171,7 +171,14 @@ def process_line_from_file(fh, data, by, report_values)
 
     next unless pos
 
-    k = by == 'ip' ? parts[0] : parts[pos - 4][1..14]
+    k = case by
+        when 'ip'
+          parts[0]
+        when 'day'
+          parts[pos - 4][1..11]
+        when 'hour'
+          parts[pos - 4][1..14]
+        end
 
     data[k] = report_values['class'].new unless data.key?(k)
     data[k].add(parts[pos + report_values['offset']])
@@ -187,6 +194,15 @@ def format_date(date)
 rescue
 end
 
+def format_day(date)
+  nk = date.dup
+  nk[11] = ' '
+  nk += '00:00:00'
+
+  Time.parse(nk).strftime('%Y-%m-%d')
+rescue
+end
+
 def setup_display(by, report)
   header = []
   line = []
@@ -195,6 +211,9 @@ def setup_display(by, report)
   when 'hour'
     header << '%-13s' % 'date_and_hour'
     line << '%-13s'
+  when 'day'
+    header << '%-10s' % 'day'
+    line << '%-10s'
   when 'ip'
     header << '%-15s' % 'ip_address'
     line << '%-15s'
@@ -236,6 +255,13 @@ def sorted_keys(by, keys)
   when 'hour'
     keys.each do |k|
       y = format_date(k)
+      next unless y
+
+      x[y] = k
+    end
+  when 'day'
+    keys.each do |k|
+      y = format_day(k)
       next unless y
 
       x[y] = k
