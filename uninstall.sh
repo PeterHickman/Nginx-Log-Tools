@@ -12,4 +12,4 @@ remove_file() {
   fi
 }
 
-remove_file /usr/local/sbin/bh
+remove_file /usr/local/bin/ngxl
