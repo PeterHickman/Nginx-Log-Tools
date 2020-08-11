@@ -204,11 +204,11 @@ end
 
 def format_day(date)
   nk = date.dup
-  nk[11] = ' '
-  nk += '00:00:00'
+  nk += ' 00:00:00'
 
   Time.parse(nk).strftime('%Y-%m-%d')
 rescue
+  nk
 end
 
 def setup_display(by, report)
@@ -304,8 +304,8 @@ end
 
 header, line = setup_display(by, report)
 
-if options['csv']
-  puts header.join(',')
+if options[CSV]
+  puts header.map { |h| h.strip}.join(',')
 
   sk = sorted_keys(by, data.keys)
 
@@ -321,7 +321,6 @@ if options['csv']
       puts [k, v.count, v.min, v.average, v.max].join(',')
     end
   end
-
 else
   puts "| #{header.join(' | ')} |"
   puts "+-#{header.map { |i| '-' * i.size }.join('-+-')}-+"
