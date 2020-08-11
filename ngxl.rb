@@ -77,7 +77,7 @@ def usage(message)
   puts "ERROR: #{message}"
   puts
   puts <<-EOM
-ngxl --report status|size|reponse --by hour|day|ip <list of Nginx log files>
+ngxl --report status|size|reponse --by hour|day|ip [--csv] <list of Nginx log files>
 
   Will process the nginx log files and report either the status (by class),
   size of the response in bytes (giving the total, minimum, average and maximum)
@@ -88,12 +88,14 @@ ngxl --report status|size|reponse --by hour|day|ip <list of Nginx log files>
 
   The log lines can be read from stdin if you need to pipe them (through
   grep perhaps)
+
+  The output will be formatted as CSV data if the "--csv" flag is given
 EOM
 
   exit
 end
 
-def opts
+def opts(flags)
   ##
   # Assumes that the options, in long format such as "--file xxx",
   # will come before the arguments. The first argument that appears
@@ -128,7 +130,11 @@ def opts
     elsif x == '--'
       end_of_options = true
     elsif x.index('--') == 0
-      y = commands.shift.downcase
+      if flags.include?(x)
+        y = true
+      else
+        y = commands.shift.downcase
+      end
       options[x] = y
     else
       arguments << x
@@ -275,7 +281,7 @@ def sorted_keys(by, keys)
   x
 end
 
-options, arguments = opts
+options, arguments = opts(%w[--csv])
 
 valid_options(options)
 
@@ -296,22 +302,42 @@ end
 
 header, line = setup_display(by, report)
 
-puts "| #{header.join(' | ')} |"
-puts "+-#{header.map { |i| '-' * i.size }.join('-+-')}-+"
+if options['csv']
+  puts header.join(',')
 
-x = "| #{line.join(' | ')} |"
+  sk = sorted_keys(by, data.keys)
 
-sk = sorted_keys(by, data.keys)
+  sk.keys.sort.each do |k|
+    v = data[sk[k]]
 
-sk.keys.sort.each do |k|
-  v = data[sk[k]]
+    case report
+    when 'status'
+      puts [k, v.count, v.code2, v.code3, v.code4, v.code5].join(',')
+    when 'size'
+      puts [k, v.count, v.total, v.min, v.average, v.max].join(',')
+    when 'response'
+      puts [k, v.count, v.min, v.average, v.max].join(',')
+    end
+  end
 
-  case report
-  when 'status'
-    puts x % [k, v.count, v.code2, v.code3, v.code4, v.code5]
-  when 'size'
-    puts x % [k, v.count, v.total, v.min, v.average, v.max]
-  when 'response'
-    puts x % [k, v.count, v.min, v.average, v.max]
+else
+  puts "| #{header.join(' | ')} |"
+  puts "+-#{header.map { |i| '-' * i.size }.join('-+-')}-+"
+
+  x = "| #{line.join(' | ')} |"
+
+  sk = sorted_keys(by, data.keys)
+
+  sk.keys.sort.each do |k|
+    v = data[sk[k]]
+
+    case report
+    when 'status'
+      puts x % [k, v.count, v.code2, v.code3, v.code4, v.code5]
+    when 'size'
+      puts x % [k, v.count, v.total, v.min, v.average, v.max]
+    when 'response'
+      puts x % [k, v.count, v.min, v.average, v.max]
+    end
   end
 end

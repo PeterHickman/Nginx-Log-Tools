@@ -111,6 +111,10 @@ As you can see above the data can be reported by hour. It can also be reported b
 		| 94.125.56.56    |    30137 |  30137 |      0 |      0 |      0 |
 		| 94.14.154.19    |        6 |      6 |      0 |      0 |      0 |
 
+## Output format
+
+By default the output is formatted as a nicely formatted text suitable from monospaced printing. If you use the `--csv` flag on the command line then the output will be formatted as csv data suitable for spreadsheets and other such tools
+
 ## Other tools
 
 Other than the marvellous `ngxtop` (to be found at `https://github.com/lebinh/ngxtop.git`) which you should be using
