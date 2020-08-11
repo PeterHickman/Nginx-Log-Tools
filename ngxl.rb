@@ -64,6 +64,7 @@ end
 
 REPORT = '--report'.freeze
 BY     = '--by'.freeze
+CSV    = '--csv'.freeze
 
 REPORT_VALUES = {
   'status'   => { 'offset' => 1, 'class' => Statuses },
@@ -152,11 +153,12 @@ def valid_options(options)
   usage "Missing option #{BY}" unless options.key?(BY)
   usage "Argument to #{BY} must be one of '#{BY_VALUES.keys.join("', '")}'" unless BY_VALUES.include?(options[BY])
 
-  return unless options.size > 2
-
   x = options.keys
   x.delete(REPORT)
   x.delete(BY)
+  x.delete(CSV)
+
+  return if x.size == 0
 
   usage "Unknown option(s) #{x.inspect}"
 end
