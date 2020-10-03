@@ -72,13 +72,13 @@ REPORT_VALUES = {
   'response' => { 'offset' => 3, 'class' => MinimumAverageMaximum }
 }.freeze
 
-BY_VALUES = %w[day hour ip].freeze
+BY_VALUES = %w[day hour ip path].freeze
 
 def usage(message)
   puts "ERROR: #{message}"
   puts
   puts <<-EOM
-ngxl --report status|size|reponse --by hour|day|ip [--csv] <list of Nginx log files>
+ngxl --report status|size|reponse --by hour|day|ip|path [--csv] <list of Nginx log files>
 
   Will process the nginx log files and report either the status (by class),
   size of the response in bytes (giving the total, minimum, average and maximum)
@@ -186,6 +186,8 @@ def process_line_from_file(fh, data, by, report_values)
           parts[pos - 4][1..11]
         when 'hour'
           parts[pos - 4][1..14]
+        when 'path'
+          parts[pos - 1].split('?').first
         end
 
     data[k] = report_values['class'].new unless data.key?(k)
@@ -211,7 +213,7 @@ rescue
   nk
 end
 
-def setup_display(by, report)
+def setup_display(by, report, data)
   header = []
   line = []
 
@@ -225,6 +227,14 @@ def setup_display(by, report)
   when 'ip'
     header << '%-15s' % 'ip_address'
     line << '%-15s'
+  when 'path'
+    size = 15
+    data.keys.each do |k|
+      size = k.size if k.size > size
+    end
+
+    header << "%-#{size}s" % 'path'
+    line << "%-#{size}s"
   end
 
   case report
@@ -278,6 +288,10 @@ def sorted_keys(by, keys)
     keys.each do |k|
       x[k] = k
     end
+  when 'path'
+    keys.each do |k|
+      x[k] = k
+    end
   end
 
   x
@@ -302,7 +316,7 @@ else
   process_line_from_file(STDIN, data, by, REPORT_VALUES[report])
 end
 
-header, line = setup_display(by, report)
+header, line = setup_display(by, report, data)
 
 if options[CSV]
   puts header.map { |h| h.strip}.join(',')
