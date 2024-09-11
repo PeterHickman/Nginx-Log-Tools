@@ -1,0 +1,4 @@
+github.com/PeterHickman/toolbox v1.0.2 h1:3md3YGOQ6NjGwFNke3h5xDWhidb26SwvEtoNcKjEwNY=
+github.com/PeterHickman/toolbox v1.0.2/go.mod h1:R1OOjNp8kIWacudQi1SDZrCYnfjU5y/2yq3HCuTIHBg=
+github.com/ncruces/go-strftime v0.1.9 h1:bY0MQC28UADQmHmaF5dgpLmImcShSi2kHU9XLdhx/f4=
+github.com/ncruces/go-strftime v0.1.9/go.mod h1:Fwc5htZGVVkseilnfgOVb9mKy6w1naJmn9CehxcKcls=
