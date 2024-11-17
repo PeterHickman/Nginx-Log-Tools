@@ -1,12 +1,13 @@
 #!/bin/sh
 
 BINARY='/usr/local/bin'
+APP=ngxl
 
-echo "Building ngxl"
-go build ngxl.go
+echo "Building $APP"
+go build -ldflags="-s -w" $APP.go
 
-echo "Installing ngxl to $BINARY"
-install -v ngxl $BINARY
+echo "Installing $APP to $BINARY"
+install $APP $BINARY
 
 echo "Removing the build"
-rm ngxl
+rm $APP
